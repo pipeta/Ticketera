@@ -23,17 +23,17 @@ const CartPage = ({
   const [buyerFullname, setBuyerFullname] = useState(user?.name || '');
   const [buyerEmail, setBuyerEmail] = useState(user?.email || '');
 
-  // Calcular totales (nota: en el backend real el precio viene de ticket_stock)
+ 
   const subtotal = cartItems.reduce((sum, item) => {
-    // Por ahora usamos precio por defecto, luego se obtendría de la API
-    const price = 25000; // Esto vendría del ticket_stock en una implementación completa
+    
+    const price = 25000; 
     return sum + (price * item.quantity);
   }, 0);
 
-  const serviceFee = Math.floor(subtotal * 0.05); // 5%
+  const serviceFee = Math.floor(subtotal * 0.05);
   const total = subtotal + serviceFee;
 
-  // Manejar eliminación de item
+
   const handleRemoveItem = async (ticketStockId) => {
     try {
       await removeFromCart(ticketStockId);
@@ -43,7 +43,7 @@ const CartPage = ({
     }
   };
 
-  // Manejar checkout
+ 
   const handleCheckout = async () => {
     if (!user) {
       setShowLogin(true);
@@ -71,7 +71,7 @@ const CartPage = ({
     }
   };
 
-  // Si no hay usuario
+  
   if (!user) {
     return (
       <div className="max-w-4xl mx-auto p-6 text-center">

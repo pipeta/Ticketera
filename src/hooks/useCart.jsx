@@ -9,7 +9,7 @@ export const useCart = (user) => {
 
   const userId = user?.id;
 
-  // Cargar items del carrito
+  
   const fetchCartItems = useCallback(async () => {
     if (!userId) {
       console.log('📝 No user, clearing cart');
@@ -23,14 +23,14 @@ export const useCart = (user) => {
       setError(null);
       
       console.log('🔄 Fetching cart for user:', userId);
-      const items = await cartApi.getItems(userId);
+      const items = await cartApi.getCart();
       
       console.log('✅ Cart items received:', items);
       setCartItems(Array.isArray(items) ? items : []);
       
-      // Si hay items, calcular expiración (3 minutos desde ahora para las pruebas)
+      
       if (items && items.length > 0) {
-        const expirationTime = new Date(Date.now() + 3 * 60 * 1000); // 3 minutos
+        const expirationTime = new Date(Date.now() + 3 * 60 * 1000); 
         setCartExpiration(expirationTime);
         console.log('⏰ Cart expires at:', expirationTime.toLocaleTimeString());
       } else {
@@ -41,14 +41,14 @@ export const useCart = (user) => {
     } catch (err) {
       console.error('❌ Error loading cart:', err);
       setError(err.message);
-      setCartItems([]); // En caso de error, mostrar carrito vacío
+      setCartItems([]);
       setCartExpiration(null);
     } finally {
       setLoading(false);
     }
   }, [userId]);
 
-  // Agregar item al carrito
+ 
   const addToCart = async (ticketStockId, quantity = 1) => {
     if (!userId) {
       throw new Error('Debes iniciar sesión para agregar al carrito');
@@ -59,7 +59,7 @@ export const useCart = (user) => {
       console.log('➕ Adding to cart:', { ticketStockId, quantity });
       
       await cartApi.addItem(userId, ticketStockId, quantity);
-      await fetchCartItems(); // Recargar carrito
+      await fetchCartItems(); 
       
       console.log('✅ Item added successfully');
       return true;
@@ -70,7 +70,7 @@ export const useCart = (user) => {
     }
   };
 
-  // Eliminar item del carrito
+
   const removeFromCart = async (ticketStockId) => {
     if (!userId) return;
 
@@ -79,7 +79,7 @@ export const useCart = (user) => {
       console.log('➖ Removing from cart:', ticketStockId);
       
       await cartApi.removeItem(userId, ticketStockId);
-      await fetchCartItems(); // Recargar carrito
+      await fetchCartItems(); 
       
       console.log('✅ Item removed successfully');
       return true;
@@ -90,7 +90,7 @@ export const useCart = (user) => {
     }
   };
 
-  // Checkout del carrito
+  
   const checkout = async (buyerFullname, buyerEmail) => {
     if (!userId) {
       throw new Error('Debes iniciar sesión para finalizar la compra');
@@ -106,7 +106,7 @@ export const useCart = (user) => {
       
       await cartApi.checkout(userId, buyerFullname, buyerEmail);
       
-      // Limpiar carrito local después del checkout exitoso
+      
       setCartItems([]);
       setCartExpiration(null);
       
@@ -119,19 +119,19 @@ export const useCart = (user) => {
     }
   };
 
-  // Verificar si el carrito está expirado
+  
   const isCartExpired = () => {
     return cartExpiration && new Date() > cartExpiration;
   };
 
-  // Tiempo restante en minutos
+
   const getTimeRemaining = () => {
     if (!cartExpiration) return 0;
     const diff = cartExpiration.getTime() - new Date().getTime();
     return Math.max(0, Math.floor(diff / (1000 * 60)));
   };
 
-  // Auto-refresh del carrito cada 30 segundos
+ 
   useEffect(() => {
     if (!userId) {
       setCartItems([]);
@@ -146,7 +146,7 @@ export const useCart = (user) => {
         console.log('🔄 Auto-refreshing cart...');
         fetchCartItems();
       }
-    }, 30000); // 30 segundos
+    }, 30000); 
 
     return () => {
       console.log('🛑 Cleaning up cart interval');
@@ -154,7 +154,7 @@ export const useCart = (user) => {
     };
   }, [userId, fetchCartItems]);
 
-  // Auto-limpiar carrito cuando expire
+
   useEffect(() => {
     if (isCartExpired() && cartItems.length > 0) {
       console.log('⏰ Cart expired, clearing items');

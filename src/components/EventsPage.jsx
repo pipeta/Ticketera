@@ -19,7 +19,7 @@ const EventsPage = ({ setSelectedEvent, setCurrentPage, showNotification }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todas");
 
-  // 🔄 Estado de carga
+  
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-8">
@@ -40,7 +40,7 @@ const EventsPage = ({ setSelectedEvent, setCurrentPage, showNotification }) => {
     );
   }
 
-  // ❌ Estado de error
+ 
   if (error) {
     return (
       <div className="max-w-7xl mx-auto p-8">

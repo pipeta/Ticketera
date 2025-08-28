@@ -26,7 +26,7 @@ export const useEvents = () => {
     }
   };
 
-  // Cargar eventos al montar el componente
+  
   useEffect(() => {
     fetchEvents();
   }, []);

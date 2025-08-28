@@ -10,7 +10,7 @@ export const useAuth = () => {
       setIsLoading(true);
       setError(null);
       
-      // Validaciones básicas
+    
       if (!email || !password) {
         throw new Error('Email y contraseña son requeridos');
       }
@@ -23,10 +23,10 @@ export const useAuth = () => {
         throw new Error('La contraseña debe tener al menos 3 caracteres');
       }
       
-      // Llamada a la API
+      
       const result = await authApi.login(email, password);
       
-      // Guardar token si existe
+     
       if (result.token) {
         authApi.storeToken(result.token);
       }

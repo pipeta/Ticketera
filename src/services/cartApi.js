@@ -1,125 +1,184 @@
 import { API_CONFIG } from '../config/api.js';
 
-const cartRequest = async (endpoint, options = {}) => {
-  const url = `${API_CONFIG.BASE_URL}${endpoint}`;
-  
-  try {
-    console.log(`🛒 ${options.method || 'GET'} ${url}`);
-    if (options.body) {
-      console.log('📤 Body:', JSON.parse(options.body));
-    }
-    
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-
-    console.log(`📥 Response: ${response.status} ${response.statusText}`);
-    
-    // 🔥 FIX PRINCIPAL: Leer el contenido SOLO UNA VEZ
-    let responseText;
-    try {
-      responseText = await response.text();
-      console.log('📄 Raw response:', responseText);
-    } catch (readError) {
-      console.error('❌ Error reading response:', readError);
-      throw new Error('Error al leer respuesta del servidor');
-    }
-
-    // Verificar si la respuesta es exitosa DESPUÉS de leer
-    if (!response.ok) {
-      console.error('❌ Error response:', responseText);
-      throw new Error(responseText || `Error ${response.status}: ${response.statusText}`);
-    }
-
-    // Intentar parsear como JSON, si falla usar como texto plano
-    let result;
-    if (responseText.trim()) {
-      try {
-        result = JSON.parse(responseText);
-        console.log('✅ JSON parsed:', result);
-      } catch (jsonError) {
-        console.log('⚠️ Not JSON, using as text:', responseText);
-        result = { 
-          message: responseText, 
-          success: true,
-          data: responseText 
-        };
-      }
-    } else {
-      // Respuesta vacía
-      result = { success: true, data: [] };
-    }
-    
-    return result;
-    
-  } catch (error) {
-    console.error('❌ Cart API Error:', error);
-    throw new Error(error.message || 'Error de conexión con el carrito');
-  }
-};
-
 export const cartApi = {
-  // GET /cart?user_id={id} - Obtener items del carrito
-  getItems: async (userId) => {
-    if (!userId) {
-      console.log('⚠️ No user ID provided, returning empty cart');
-      return [];
-    }
-    
+  
+  getTicketStocks: async (eventId) => {
     try {
-      const result = await cartRequest(`/cart/cart?user_id=${userId}`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/tickets/${eventId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📋 Ticket stocks:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error fetching ticket stocks:', error);
+      throw error;
+    }
+  },
+
+
+  addToCart: async (ticketStockId, quantity = 1) => {
+    try {
+     
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.id) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      const cartItem = {
+        user_id: user.id,
+        ticket_stock_id: ticketStockId, 
+        quantity: quantity
+      };
+
+      console.log('➕ Adding to cart:', cartItem);
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/cart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cartItem)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Error ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Item added to cart:', result);
+      return result;
       
-      // El backend devuelve un array directamente o dentro de 'data'
-      if (Array.isArray(result)) {
-        return result;
-      } else if (Array.isArray(result.data)) {
-        return result.data;
-      } else {
-        console.log('⚠️ Unexpected response format:', result);
+    } catch (error) {
+      console.error('❌ Error adding to cart:', error);
+      throw error;
+    }
+  },
+
+  getCart: async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.id) {
         return [];
       }
+
+      console.log('🛒 Fetching cart for user:', user.id);
+      
+      const response = await fetch(`${API_CONFIG.BASE_URL}/cart/cart?user_id=${user.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Cart items received:', data);
+      return data;
+      
     } catch (error) {
-      console.error('❌ Error getting cart items:', error);
-      return []; // Devolver array vacío en caso de error
+      console.error('❌ Error fetching cart:', error);
+      return [];
     }
   },
 
-  // POST /cart - Agregar item al carrito
-  addItem: async (userId, ticketStockId, quantity) => {
-    return await cartRequest('/cart', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_id: userId,
-        ticket_stock_id: ticketStockId,
-        quantity: quantity
-      }),
-    });
+
+  removeFromCart: async (ticketStockId) => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.id) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      console.log('🗑️ Removing from cart:', ticketStockId);
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/cart/remove`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          ticket_stock_id: ticketStockId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}`);
+      }
+
+      console.log('✅ Item removed from cart');
+      return { success: true };
+      
+    } catch (error) {
+      console.error('❌ Error removing from cart:', error);
+      throw error;
+    }
   },
 
-  // POST /cart/remove - Eliminar item del carrito
-  removeItem: async (userId, ticketStockId) => {
-    return await cartRequest('/cart/remove', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_id: userId,
-        ticket_stock_id: ticketStockId
-      }),
-    });
-  },
+ 
+  checkout: async (buyerFullname, buyerEmail) => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.id) {
+        throw new Error('Usuario no autenticado');
+      }
 
-  // POST /cart/checkout - Realizar checkout
-  checkout: async (userId, buyerFullname, buyerEmail) => {
-    return await cartRequest('/cart/checkout', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_id: userId,
+      const checkoutData = {
+        user_id: user.id,
         buyer_fullname: buyerFullname,
         buyer_email: buyerEmail
-      }),
-    });
+      };
+
+      console.log('💳 Processing checkout:', checkoutData);
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/cart/checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(checkoutData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Error ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Checkout successful:', result);
+      return result;
+      
+    } catch (error) {
+      console.error('❌ Error during checkout:', error);
+      throw error;
+    }
+  },
+
+  
+  getCartCount: async () => {
+    try {
+      const cartItems = await cartApi.getCart();
+      const count = cartItems.reduce((total, item) => {
+        const itemQuantity = item.items?.[0]?.ticket?.quantity || 0;
+        return total + itemQuantity;
+      }, 0);
+      return count;
+    } catch (error) {
+      console.error('❌ Error getting cart count:', error);
+      return 0;
+    }
   }
 };
